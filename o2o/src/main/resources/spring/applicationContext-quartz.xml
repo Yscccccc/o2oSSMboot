@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:task="http://www.springframework.org/schema/task"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans	
+    http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://www.springframework.org/schema/context
+    http://www.springframework.org/schema/context/spring-context.xsd
+    http://www.springframework.org/schema/task  
+	http://www.springframework.org/schema/task/spring-task-3.2.xsd  
+    ">
+    <task:annotation-driven/> 
+	<!-- 使用MethodInvokingJobDetailFactoryBean，任务类可以不实现Job接口，通过targetMethod指定调用方法-->
+    <bean id="job" class="com.ysc.o2o.service.impl.ProductSellDailyServiceImpl"/>
+    <bean id="jobDetailFactoryBean" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+        <property name="group" value="job_product_sell_daily_group"/>
+        <property name="name" value="product_sell_daily_job"/>
+        <!--false表示等上一个任务执行完后再开启新的任务-->
+        <property name="concurrent" value="false"/>
+        <property name="targetObject">
+            <ref bean="job"/>
+        </property>
+        <property name="targetMethod">
+            <value>dailyCalculate</value>
+        </property>
+    </bean>
+    <!--  调度触发器 -->
+    <bean id="prductSellDailyTriggerFactory"
+        class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+        <property name="name" value="product_sell_daily_trigger"/>
+        <property name="group" value="job_product_sell_daily_group"/>
+        <property name="jobDetail">
+            <ref bean="jobDetailFactoryBean" />
+        </property>
+        <property name="cronExpression">
+            <value>0 0 0 * * ? *</value>
+        </property>
+    </bean>
+    <!-- 调度工厂 -->
+    <bean id="scheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+        <property name="triggers">
+            <list>
+                <ref bean="prductSellDailyTriggerFactory"/>
+            </list>
+        </property>
+        <property name="waitForJobsToCompleteOnShutdown" value="true"/> 
+    </bean>    
+    
+    
+</beans>
